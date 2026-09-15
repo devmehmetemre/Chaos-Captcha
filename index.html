@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kendi CAPTCHA Sistemimiz</title>
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f4f4f9; margin: 0; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 300px; text-align: center; }
+        .captcha-box { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 15px; }
+        img { border-radius: 4px; border: 1px solid #ccc; }
+        button.refresh { background: #6c757d; color: white; border: none; padding: 8px 12px; cursor: pointer; border-radius: 4px; }
+        input[type="text"] { width: 90%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; text-align: center; }
+        button.submit { width: 100%; padding: 10px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        .result { margin-top: 15px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h3>Güvenlik Doğrulaması</h3>
+    <div class="captcha-box">
+        <img id="captchaImg" src="" alt="CAPTCHA">
+        <button class="refresh" onclick="loadCaptcha()">↻</button>
+    </div>
+    <input type="text" id="userInput" placeholder="Kodu Giriniz" maxlength="5">
+    <button class="submit" onclick="verifyCaptcha()">Doğrula</button>
+    <div id="result" class="result"></div>
+</div>
+
+<script>
+    // Yerelde çalışırken localhost, Render'a yükleyince Render URL'si olacak
+    const API_URL = "http://127.0.0.1:8000";
+    let currentCaptchaId = "";
+
+    async function loadCaptcha() {
+        document.getElementById("result").innerText = "";
+        document.getElementById("userInput").value = "";
+        
+        const response = await fetch(`${API_URL}/api/captcha/generate`);
+        currentCaptchaId = response.headers.get("X-Captcha-ID");
+        
+        const blob = await response.blob();
+        document.getElementById("captchaImg").src = URL.createObjectURL(blob);
+    }
+
+    async function verifyCaptcha() {
+        const userInput = document.getElementById("userInput").value;
+        const res = await fetch(`${API_URL}/api/captcha/verify`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                captcha_id: currentCaptchaId,
+                user_input: userInput
+            })
+        });
+
+        const data = await res.json();
+        const resultDiv = document.getElementById("result");
+
+        if (data.success) {
+            resultDiv.style.color = "green";
+            resultDiv.innerText = "✅ " + data.message;
+        } else {
+            resultDiv.style.color = "red";
+            resultDiv.innerText = "❌ " + (data.message || data.detail);
+            loadCaptcha(); // Başarısız olunca resmi yenile
+        }
+    }
+
+    // Sayfa yüklenince CAPTCHA çek
+    loadCaptcha();
+</script>
+
+</body>
+</html>
