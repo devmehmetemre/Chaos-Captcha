@@ -8,22 +8,19 @@ from captcha_generator import generate_random_text, create_captcha_image
 
 app = FastAPI(title="Chaos CAPTCHA API")
 
-# Frontend (Vercel / GitHub Pages / Local) erişimi için CORS izni
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Canlıda istersen kendi frontend domaininle sınırlayabilirsin
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["X-Captcha-ID"]  # Header'daki ID bilgisine JS erişebilsin
+    expose_headers=["X-Captcha-ID"]
 )
 
-# Bellek depolama: {captcha_id: {"code": "ABC23", "created_at": 1718000000}}
 captcha_db = {}
-CAPTCHA_EXPIRE_SECONDS = 180  # 3 Dakika geçerlilik süresi
+CAPTCHA_EXPIRE_SECONDS = 180  # 3 Dakika
 
 def clean_expired_captchas():
-    """Süresi dolmuş CAPTCHA'ları bellekten temizler."""
     now = time.time()
     expired_keys = [
         cid for cid, data in captcha_db.items() 
@@ -38,7 +35,7 @@ class VerifyRequest(BaseModel):
 
 @app.get("/api/captcha/generate")
 def get_captcha():
-    clean_expired_captchas()  # Yeni üretmeden önce eskiyenleri temizle
+    clean_expired_captchas()
     
     captcha_id = str(uuid.uuid4())
     code = generate_random_text(length=5)
@@ -60,22 +57,22 @@ def verify_captcha(data: VerifyRequest):
     
     record = captcha_db.get(data.captcha_id)
     
-    # 1. CAPTCHA bulunamadıysa veya süresi dolduysa HTTP 400 fırlat
     if not record:
         raise HTTPException(
             status_code=400, 
-            detail="CAPTCHA süresi dolmuş veya geçersiz! Lütfen yenileyin."
+            detail="CAPTCHA süresi dolmuş veya geçersiz ID!"
         )
     
-    # Tek kullanımlık güvenlik (Replay Attack önleme)
+    correct_code = record["code"]
+    user_code = data.user_input.strip().upper()
+    
+    # Kullanılan CAPTCHA'yı bellekten siliyoruz
     del captcha_db[data.captcha_id]
     
-    # 2. Girilen kod hatalıysa HTTP 400 fırlat (Network sekmesinde kırmızılanır)
-    if data.user_input.strip().upper() != record["code"]:
+    if user_code != correct_code:
         raise HTTPException(
             status_code=400, 
-            detail="Hatalı Kod! Lütfen tekrar deneyin."
+            detail=f"Hatalı Kod! (Girilen: {user_code})"
         )
     
-    # 3. Kod doğruysa HTTP 200 döner
     return {"success": True, "message": "Doğrulama Başarılı!"}
