@@ -6,16 +6,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from captcha_generator import generate_random_text, create_captcha_image
 
-app = FastAPI(title="Custom CAPTCHA API")
+app = FastAPI(title="Chaos CAPTCHA API")
 
-# Frontend'in (Vercel/GitHub Pages) API'ye erişebilmesi için CORS izni veriyoruz
+# Frontend (Vercel / GitHub Pages / Local) erişimi için CORS izni
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Canlıda kendi domaininle değiştirebilirsin
+    allow_origins=["*"],  # Canlıda istersen kendi frontend domaininle sınırlayabilirsin
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["X-Captcha-ID"] # Header bilgisine tarayıcı erişebilsin
+    expose_headers=["X-Captcha-ID"]  # Header'daki ID bilgisine JS erişebilsin
 )
 
 # Bellek depolama: {captcha_id: {"code": "ABC23", "created_at": 1718000000}}
@@ -38,7 +38,7 @@ class VerifyRequest(BaseModel):
 
 @app.get("/api/captcha/generate")
 def get_captcha():
-    clean_expired_captchas() # Yeni üretmeden önce eskileri süpür
+    clean_expired_captchas()  # Yeni üretmeden önce eskiyenleri temizle
     
     captcha_id = str(uuid.uuid4())
     code = generate_random_text(length=5)
@@ -60,13 +60,22 @@ def verify_captcha(data: VerifyRequest):
     
     record = captcha_db.get(data.captcha_id)
     
+    # 1. CAPTCHA bulunamadıysa veya süresi dolduysa HTTP 400 fırlat
     if not record:
-        raise HTTPException(status_code=400, detail="CAPTCHA_BULUNAMADI_VEYA_SURESI_DOLMUS")
+        raise HTTPException(
+            status_code=400, 
+            detail="CAPTCHA süresi dolmuş veya geçersiz! Lütfen yenileyin."
+        )
     
     # Tek kullanımlık güvenlik (Replay Attack önleme)
     del captcha_db[data.captcha_id]
     
-    if data.user_input.strip().upper() == record["code"]:
-        return {"success": True, "message": "Doğrulama Başarılı!"}
+    # 2. Girilen kod hatalıysa HTTP 400 fırlat (Network sekmesinde kırmızılanır)
+    if data.user_input.strip().upper() != record["code"]:
+        raise HTTPException(
+            status_code=400, 
+            detail="Hatalı Kod! Lütfen tekrar deneyin."
+        )
     
-    return {"success": False, "message": "Hatalı Kod!"}
+    # 3. Kod doğruysa HTTP 200 döner
+    return {"success": True, "message": "Doğrulama Başarılı!"}
