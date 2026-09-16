@@ -1,4 +1,4 @@
-const ADMIN_EMAIL = "admin@gmail.com";
+const ADMIN_EMAIL = "haslooytr@gmail.com";
 
 let state = {
   currentUser: null,
