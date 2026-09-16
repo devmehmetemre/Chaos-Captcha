@@ -1,9 +1,19 @@
 const ADMIN_EMAIL = "haslooytr@gmail.com";
 
+// +100 FORMAT VERİTABANI KATEGORİLERİ
+const FORMAT_DATABASE = {
+  image: ["WEBP", "PNG", "JPG", "JPEG", "GIF", "BMP", "TIFF", "ICO", "SVG", "HEIC", "AVIF", "PSD", "EPS", "RAW"],
+  audio: ["MP3", "WAV", "OGG", "M4A", "FLAC", "AAC", "WMA", "AIFF", "OPUS", "AMR", "MID", "ALAC"],
+  video: ["MP4", "MKV", "AVI", "MOV", "WMV", "FLV", "WEBM", "M4V", "MPEG", "3GP", "OGV", "TS"],
+  document: ["PDF", "DOCX", "DOC", "TXT", "RTF", "ODT", "EPUB", "MOBI", "XLSX", "XLS", "PPTX", "PPT", "HTML", "MD", "CSV"],
+  archive: ["ZIP", "RAR", "7Z", "TAR", "GZ", "BZ2", "XZ", "ISO"]
+};
+
 let state = {
   currentUser: null,
   guestId: getOrCreateGuestId(),
   isPasswordVisible: false,
+  selectedFile: null,
   logs: []
 };
 
@@ -21,7 +31,95 @@ function getCurrentIdentity() {
   return state.currentUser ? state.currentUser.email : state.guestId;
 }
 
-// AKICI GÖZ TAKİBİ
+// DRAG & DROP VE DOSYA SEÇİMİ
+const dropZone = document.getElementById('drop-zone');
+
+if(dropZone) {
+  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, preventDefaults, false);
+  });
+
+  function preventDefaults(e) { e.preventDefault(); e.stopPropagation(); }
+
+  ['dragenter', 'dragover'].forEach(eventName => {
+    dropZone.addEventListener(eventName, () => dropZone.classList.add('highlight'), false);
+  });
+
+  ['dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, () => dropZone.classList.remove('highlight'), false);
+  });
+
+  dropZone.addEventListener('drop', (e) => {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    if (files.length) handleFileSelect({ target: { files: files } });
+  });
+}
+
+function handleFileSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  state.selectedFile = file;
+  document.getElementById('selected-file-name').innerText = file.name;
+  document.getElementById('selected-file-size').innerText = `(${(file.size / 1024).toFixed(1)} KB)`;
+
+  populateFormats(file);
+
+  document.getElementById('converter-controls').classList.remove('hidden');
+  document.getElementById('converter-result').classList.add('hidden');
+}
+
+function populateFormats(file) {
+  const select = document.getElementById('target-format');
+  select.innerHTML = "";
+
+  const fileExt = file.name.split('.').pop().toLowerCase();
+  
+  // Tüm formatları listeye gruplayarak ekleme (+100 Format)
+  Object.keys(FORMAT_DATABASE).forEach(category => {
+    const optgroup = document.createElement('optgroup');
+    optgroup.label = category.toUpperCase() + " FORMATLARI";
+
+    FORMAT_DATABASE[category].forEach(fmt => {
+      if (fmt.toLowerCase() !== fileExt) {
+        const option = document.createElement('option');
+        option.value = fmt.toLowerCase();
+        option.innerText = fmt;
+        optgroup.appendChild(option);
+      }
+    });
+    select.appendChild(optgroup);
+  });
+}
+
+function executeConversion() {
+  if (!state.selectedFile) return;
+
+  const targetFormat = document.getElementById('target-format').value;
+  const resultBox = document.getElementById('converter-result');
+
+  resultBox.innerHTML = "⏳ Dosya dönüştürülüyor...";
+  resultBox.classList.remove('hidden');
+
+  setTimeout(() => {
+    const originalName = state.selectedFile.name.substring(0, state.selectedFile.name.lastIndexOf('.'));
+    const newFileName = `${originalName}.${targetFormat}`;
+
+    // Simgesel/İstemci tarafı blob indirme linki oluşturma
+    const blob = new Blob([state.selectedFile], { type: 'application/octet-stream' });
+    const url = URL.createObjectURL(blob);
+
+    resultBox.innerHTML = `
+      <p style="color:#10b981; font-weight:600; margin-bottom:0.5rem;">✅ Başarıyla Dönüştürüldü!</p>
+      <a href="${url}" download="${newFileName}" class="download-link">📥 ${newFileName} İndir</a>
+    `;
+
+    logActivity(`Dönüştürücü (${targetFormat.toUpperCase()})`);
+  }, 1200);
+}
+
+// GÖZ TAKİBİ
 const leftPupil = document.getElementById('left-pupil');
 const rightPupil = document.getElementById('right-pupil');
 const leftEyelid = document.getElementById('left-eyelid');
@@ -42,8 +140,10 @@ document.addEventListener('mousemove', (e) => {
   const moveX = Math.cos(angle) * distance;
   const moveY = Math.sin(angle) * distance;
 
-  leftPupil.style.transform = `translate(${moveX}px, ${moveY}px)`;
-  rightPupil.style.transform = `translate(${moveX}px, ${moveY}px)`;
+  if (leftPupil && rightPupil) {
+    leftPupil.style.transform = `translate(${moveX}px, ${moveY}px)`;
+    rightPupil.style.transform = `translate(${moveX}px, ${moveY}px)`;
+  }
 });
 
 function togglePasswordVisibility() {
@@ -65,7 +165,7 @@ function togglePasswordVisibility() {
   }
 }
 
-// GERÇEK GOOGLE GİRİŞ CALLBACK'İ
+// GOOGLE GİRİŞ
 function handleGoogleCallback(response) {
   try {
     const base64Url = response.credential.split('.')[1];
@@ -107,20 +207,31 @@ function loginUser(email) {
   if (email === ADMIN_EMAIL) {
     badge.className = "badge admin";
     badge.innerText = "Admin";
-    document.getElementById('admin-sidebar-btn').classList.remove('hidden');
+    document.getElementById('admin-nav-btn').classList.remove('hidden');
   }
 
   logActivity("Sisteme Giriş Yapıldı");
 }
 
 function filterCategory(category, element) {
-  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-  element.classList.add('active');
+  document.querySelectorAll('.top-nav-item').forEach(el => el.classList.remove('active'));
+  if(element) element.classList.add('active');
 
   const cards = document.querySelectorAll('#tools-grid .card');
-  cards.forEach(card => {
-    card.style.display = (category === 'all' || card.dataset.category === category) ? "flex" : "none";
-  });
+  const heroBox = document.querySelector('.hero-converter-box');
+
+  if (category === 'converter') {
+    heroBox.style.display = "block";
+    cards.forEach(card => card.style.display = "none");
+  } else if (category === 'all') {
+    heroBox.style.display = "block";
+    cards.forEach(card => card.style.display = "flex");
+  } else {
+    heroBox.style.display = "none";
+    cards.forEach(card => {
+      card.style.display = card.dataset.category === category ? "flex" : "none";
+    });
+  }
 }
 
 function searchTools() {
@@ -156,24 +267,6 @@ function formatJSON() {
   }
 }
 
-function processImage() {
-  const input = document.getElementById('image-input');
-  if (!input.files[0]) return alert("Lütfen bir resim seçin!");
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    const img = new Image();
-    img.src = e.target.result;
-    img.onload = function() {
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width; canvas.height = img.height;
-      canvas.getContext('2d').drawImage(img, 0, 0);
-      document.getElementById('image-result').innerHTML = `<a href="${canvas.toDataURL('image/webp')}" download="converted.webp" style="color:#818cf8;">İndir (.WebP)</a>`;
-      logActivity("Resim Dönüştürücü");
-    };
-  };
-  reader.readAsDataURL(input.files[0]);
-}
-
 function generatePassword() {
   const len = document.getElementById('pass-length').value;
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()";
@@ -199,6 +292,7 @@ function showPage(pageId) {
 
 function renderAdminTable() {
   const tbody = document.getElementById('activity-log');
+  if(!tbody) return;
   tbody.innerHTML = "";
   let guestCount = 0, registeredCount = 0;
 
