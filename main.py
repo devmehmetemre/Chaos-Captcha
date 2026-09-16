@@ -1,78 +1,25 @@
-import uuid
-import time
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import StreamingResponse
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from captcha_generator import generate_random_text, create_captcha_image
+from flask import Flask, render_template_string, jsonify, request
+import os
 
-app = FastAPI(title="Chaos CAPTCHA API")
+app = Flask(__name__)
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-    expose_headers=["X-Captcha-ID"]
-)
+# STATIC & TEMPLATE DOSYALARINI OKUMA
+def read_file(filename):
+    with open(filename, 'r', encoding='utf-8') as f:
+        return f.read()
 
-captcha_db = {}
-CAPTCHA_EXPIRE_SECONDS = 180  # 3 Dakika
+@app.route('/')
+def index():
+    return read_file('index.html')
 
-def clean_expired_captchas():
-    now = time.time()
-    expired_keys = [
-        cid for cid, data in captcha_db.items() 
-        if now - data["created_at"] > CAPTCHA_EXPIRE_SECONDS
-    ]
-    for cid in expired_keys:
-        del captcha_db[cid]
+@app.route('/style.css')
+def style():
+    return app.response_class(read_file('style.css'), mimetype='text/css')
 
-class VerifyRequest(BaseModel):
-    captcha_id: str
-    user_input: str
+@app.route('/app.js')
+def js():
+    return app.response_class(read_file('app.js'), mimetype='application/javascript')
 
-@app.get("/api/captcha/generate")
-def get_captcha():
-    clean_expired_captchas()
-    
-    captcha_id = str(uuid.uuid4())
-    code = generate_random_text(length=5)
-    
-    captcha_db[captcha_id] = {
-        "code": code.upper(),
-        "created_at": time.time()
-    }
-    
-    img_bytes = create_captcha_image(code)
-    
-    response = StreamingResponse(img_bytes, media_type="image/png")
-    response.headers["X-Captcha-ID"] = captcha_id
-    return response
-
-@app.post("/api/captcha/verify")
-def verify_captcha(data: VerifyRequest):
-    clean_expired_captchas()
-    
-    record = captcha_db.get(data.captcha_id)
-    
-    if not record:
-        raise HTTPException(
-            status_code=400, 
-            detail="CAPTCHA süresi dolmuş veya geçersiz ID!"
-        )
-    
-    correct_code = record["code"]
-    user_code = data.user_input.strip().upper()
-    
-    # Kullanılan CAPTCHA'yı bellekten siliyoruz
-    del captcha_db[data.captcha_id]
-    
-    if user_code != correct_code:
-        raise HTTPException(
-            status_code=400, 
-            detail=f"Hatalı Kod! (Girilen: {user_code})"
-        )
-    
-    return {"success": True, "message": "Doğrulama Başarılı!"}
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
