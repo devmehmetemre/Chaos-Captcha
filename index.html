@@ -3,116 +3,144 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TAGCHAOS TOOLS</title>
+  <title>TAGCHAOS TOOLS — Hepsi Bir Arada Dosya Dönüştürücü & Araçlar</title>
   <link rel="stylesheet" href="/style.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 
-  <div class="app-container">
-    <aside class="sidebar">
-      <div class="brand">
-        <div class="brand-icon">⚡</div>
-        <h2>TAGCHAOS TOOLS</h2>
+  <!-- ÜST NAVİGASYON BAR (123apps Temiz Arayüzü) -->
+  <header class="navbar">
+    <div class="nav-left">
+      <div class="brand-logo" onclick="showPage('tools-page')">
+        <span class="logo-icon">⚡</span>
+        <span class="logo-text">TAGCHAOS TOOLS</span>
       </div>
-
-      <nav class="nav-menu">
-        <button class="nav-item active" onclick="filterCategory('all', this)"><span>📂</span> Tüm Araçlar</button>
-        <button class="nav-item" onclick="filterCategory('dev', this)"><span>💻</span> Yazılım & Kod</button>
-        <button class="nav-item" onclick="filterCategory('media', this)"><span>🖼️</span> Medya & Görsel</button>
-        <button class="nav-item" onclick="filterCategory('text', this)"><span>📝</span> Metin & Analiz</button>
-        <button id="admin-sidebar-btn" class="nav-item hidden" onclick="showPage('admin-page')"><span>⚙️</span> Admin Paneli</button>
+      <nav class="top-nav">
+        <button class="top-nav-item active" onclick="filterCategory('all', this)">Tüm Araçlar</button>
+        <button class="top-nav-item" onclick="filterCategory('converter', this)">🔄 Dosya Dönüştürücü (+100)</button>
+        <button class="top-nav-item" onclick="filterCategory('dev', this)">💻 Yazılım & Kod</button>
+        <button class="top-nav-item" onclick="filterCategory('text', this)">📝 Metin & Analiz</button>
+        <button id="admin-nav-btn" class="top-nav-item hidden" onclick="showPage('admin-page')">⚙️ Admin</button>
       </nav>
+    </div>
 
-      <div class="sidebar-footer">
-        <div class="user-card">
-          <div class="user-avatar" id="avatar-icon">👤</div>
-          <div class="user-info">
-            <span id="user-name" class="user-title">Misafir Kullanıcı</span>
-            <span id="user-badge" class="badge guest">Kayıtsız</span>
+    <div class="nav-right">
+      <div class="search-mini">
+        <input type="text" id="tool-search" placeholder="Araç ara..." onkeyup="searchTools()">
+      </div>
+      <div id="user-status-display" class="user-pill">
+        <span id="user-name">Misafir</span>
+        <span id="user-badge" class="badge guest">Kayıtsız</span>
+      </div>
+      <button id="auth-btn" class="btn-clean" onclick="openAuthModal()">Giriş Yap</button>
+    </div>
+  </header>
+
+  <main class="main-container">
+    <!-- ANA ARAÇLAR SAYFASI -->
+    <section id="tools-page" class="page active">
+      
+      <!-- ÖNE ÇIKAN BÜYÜK DÖNÜŞTÜRÜCÜ (123APPS TEMİZ BÖLÜMÜ) -->
+      <div class="hero-converter-box">
+        <h1 class="hero-title">Çevrimiçi Dosya Dönüştürücü</h1>
+        <p class="hero-sub">Resim, Ses, Video, Belge ve Arşiv formatlarını (+100 format) anında dönüştürün.</p>
+        
+        <div class="upload-area" id="drop-zone" onclick="document.getElementById('file-upload-input').click()">
+          <input type="file" id="file-upload-input" class="hidden" onchange="handleFileSelect(event)">
+          
+          <div class="upload-btn-group">
+            <button class="btn-hero-primary" type="button">
+              <span>📂 Dosya seç</span>
+            </button>
           </div>
+          
+          <p class="drop-text" id="file-label-text">veya buraya bir dosya bırakın</p>
+        </div>
+
+        <!-- YÜKLENEN DOSYA & FORMAT SEÇİMİ PANELİ -->
+        <div id="converter-controls" class="converter-controls hidden">
+          <div class="selected-file-info">
+            <span class="file-icon">📄</span>
+            <span id="selected-file-name">dosya.png</span>
+            <span id="selected-file-size" class="file-size">(0 KB)</span>
+          </div>
+
+          <div class="format-select-group">
+            <label for="target-format">Hedef Format:</label>
+            <select id="target-format" class="clean-select">
+              <!-- JS Tarafından Dinamik 100+ Format Dolacak -->
+            </select>
+          </div>
+
+          <button class="btn-hero-primary start-convert-btn" onclick="executeConversion()">Dönüştürmeyi Başlat</button>
+        </div>
+
+        <div id="converter-result" class="converter-result hidden"></div>
+
+        <div class="format-tags">
+          <span>PNG</span><span>JPG</span><span>WEBP</span><span>PDF</span><span>MP3</span><span>WAV</span><span>MP4</span><span>MKV</span><span>DOCX</span><span>ZIP</span><span>+90 Format</span>
         </div>
       </div>
-    </aside>
 
-    <main class="main-content">
-      <header class="topbar">
-        <div class="search-bar">
-          <span>🔍</span>
-          <input type="text" id="tool-search" placeholder="Araçlarda ara..." onkeyup="searchTools()">
-        </div>
-        <div class="topbar-actions">
-          <button id="auth-btn" class="btn-primary" onclick="openAuthModal()">Giriş Yap / Kaydol</button>
-        </div>
-      </header>
+      <!-- DİĞER YARDIMCI ARAÇLAR -->
+      <div class="section-divider"><h2>Diğer Yardımcı Araçlar</h2></div>
 
-      <section id="tools-page" class="page active">
-        <div class="page-header">
-          <h1>Araç Kitaplığı</h1>
-          <p>Günlük işlerinizi hızlandıracak modern yardımcı araçlar.</p>
+      <div class="grid" id="tools-grid">
+        <div class="card" data-category="dev" data-name="json biçimlendirici">
+          <div class="card-header"><h3>⚡ JSON Biçimlendirici</h3></div>
+          <textarea id="json-input" placeholder="JSON kodunu buraya yapıştır..."></textarea>
+          <button class="btn-action" onclick="formatJSON()">Düzenle & Doğrula</button>
+          <pre id="json-output"></pre>
         </div>
 
-        <div class="grid" id="tools-grid">
-          <div class="card" data-category="dev" data-name="json biçimlendirici">
-            <div class="card-header"><span class="card-icon">⚡</span><h3>JSON Biçimlendirici</h3></div>
-            <textarea id="json-input" placeholder="JSON kodunu buraya yapıştır..."></textarea>
-            <button class="btn-action" onclick="formatJSON()">Düzenle & Doğrula</button>
-            <pre id="json-output"></pre>
+        <div class="card" data-category="dev" data-name="şifre üreteci">
+          <div class="card-header"><h3>🔑 Güvenli Şifre Üreteci</h3></div>
+          <div class="range-group">
+            <label>Uzunluk: <b id="pass-len-val">16</b></label>
+            <input type="range" id="pass-length" min="8" max="64" value="16" oninput="document.getElementById('pass-len-val').innerText = this.value">
           </div>
-
-          <div class="card" data-category="media" data-name="resim dönüştürücü webp">
-            <div class="card-header"><span class="card-icon">🖼️</span><h3>WebP Resim Dönüştürücü</h3></div>
-            <input type="file" id="image-input" accept="image/*" class="file-input">
-            <button class="btn-action" onclick="processImage()">Dönüştür</button>
-            <div id="image-result" class="result-box"></div>
-          </div>
-
-          <div class="card" data-category="dev" data-name="şifre üreteci">
-            <div class="card-header"><span class="card-icon">🔑</span><h3>Güvenli Şifre Üreteci</h3></div>
-            <div class="range-group">
-              <label>Uzunluk: <b id="pass-len-val">16</b></label>
-              <input type="range" id="pass-length" min="8" max="64" value="16" oninput="document.getElementById('pass-len-val').innerText = this.value">
-            </div>
-            <button class="btn-action" onclick="generatePassword()">Şifre Oluştur</button>
-            <input type="text" id="pass-output" readonly placeholder="Oluşturulan şifre...">
-          </div>
-
-          <div class="card" data-category="text" data-name="metin analiz">
-            <div class="card-header"><span class="card-icon">📝</span><h3>Metin Analizörü <span class="badge-mini">Limitli</span></h3></div>
-            <textarea id="text-input" placeholder="Metninizi girin..."></textarea>
-            <button class="btn-action" onclick="analyzeText()">Analiz Et</button>
-            <div id="text-output" class="result-box"></div>
-          </div>
-        </div>
-      </section>
-
-      <section id="admin-page" class="page">
-        <div class="page-header">
-          <h1>⚙️ Yönetici Kontrol Paneli</h1>
-          <button class="btn-secondary" onclick="showPage('tools-page')">← Araçlara Dön</button>
+          <button class="btn-action" onclick="generatePassword()">Şifre Oluştur</button>
+          <input type="text" id="pass-output" readonly placeholder="Oluşturulan şifre...">
         </div>
 
-        <div class="admin-stats">
-          <div class="stat-card"><h4>Toplam Etkileşim</h4><span id="stat-total-users">0</span></div>
-          <div class="stat-card"><h4>Aktif Oturumlar</h4><span id="stat-active-today">0</span></div>
-          <div class="stat-card"><h4>Kayıtlı Üyeler</h4><span id="stat-registered-users">0</span></div>
-          <div class="stat-card"><h4>Misafir Kimlikleri</h4><span id="stat-guest-users">0</span></div>
+        <div class="card" data-category="text" data-name="metin analiz">
+          <div class="card-header"><h3>📝 Metin Analizörü <span class="badge-mini">Limitli</span></h3></div>
+          <textarea id="text-input" placeholder="Metninizi girin..."></textarea>
+          <button class="btn-action" onclick="analyzeText()">Analiz Et</button>
+          <div id="text-output" class="result-box"></div>
         </div>
+      </div>
+    </section>
 
-        <h3>Canlı Kullanıcı Hareketleri</h3>
-        <div class="table-wrapper">
-          <table class="activity-table">
-            <thead>
-              <tr><th>Kullanıcı / Misafir Kimliği</th><th>Durum</th><th>Çalıştırılan Tool</th><th>Zaman</th></tr>
-            </thead>
-            <tbody id="activity-log"></tbody>
-          </table>
-        </div>
-      </section>
-    </main>
-  </div>
+    <!-- ADMIN PANELI -->
+    <section id="admin-page" class="page">
+      <div class="page-header">
+        <h1>⚙️ Yönetici Kontrol Paneli</h1>
+        <button class="btn-clean" onclick="showPage('tools-page')">← Araçlara Dön</button>
+      </div>
 
+      <div class="admin-stats">
+        <div class="stat-card"><h4>Toplam Etkileşim</h4><span id="stat-total-users">0</span></div>
+        <div class="stat-card"><h4>Aktif Oturumlar</h4><span id="stat-active-today">0</span></div>
+        <div class="stat-card"><h4>Kayıtlı Üyeler</h4><span id="stat-registered-users">0</span></div>
+        <div class="stat-card"><h4>Misafir Kimlikleri</h4><span id="stat-guest-users">0</span></div>
+      </div>
+
+      <h3>Canlı Kullanıcı Hareketleri</h3>
+      <div class="table-wrapper">
+        <table class="activity-table">
+          <thead>
+            <tr><th>Kullanıcı / Misafir Kimliği</th><th>Durum</th><th>Çalıştırılan Tool</th><th>Zaman</th></tr>
+          </thead>
+          <tbody id="activity-log"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- AUTH MODAL -->
   <div id="auth-modal" class="modal">
     <div class="modal-content">
       <span class="close-btn" onclick="closeAuthModal()">&times;</span>
@@ -121,8 +149,8 @@
         <svg id="eyes-svg" viewBox="0 0 200 100" width="180" height="90">
           <defs>
             <radialGradient id="iris-grad" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stop-color="#6366f1"/>
-              <stop offset="100%" stop-color="#312e81"/>
+              <stop offset="0%" stop-color="#2563eb"/>
+              <stop offset="100%" stop-color="#1e3a8a"/>
             </radialGradient>
           </defs>
           <g class="eye" transform="translate(50, 50)">
@@ -149,7 +177,6 @@
       <h2>Hoş Geldiniz</h2>
       <p class="modal-sub">Devam etmek için giriş yapın</p>
 
-      <!-- GERÇEK GOOGLE GİRİŞİ (OAUTH CLIENT ID BURAYA) -->
       <div id="g_id_onload"
            data-client_id="890931258976-m5kuuhlh8rl3nda79nlloa760av9fflb.apps.googleusercontent.com"
            data-callback="handleGoogleCallback">
@@ -166,7 +193,7 @@
           <input type="password" id="password-input" placeholder="Şifre" required>
           <button type="button" class="eye-toggle" onclick="togglePasswordVisibility()">👁️</button>
         </div>
-        <button type="submit" class="btn-primary full-width">Giriş Yap / Kaydol</button>
+        <button type="submit" class="btn-hero-primary full-width">Giriş Yap / Kaydol</button>
       </form>
     </div>
   </div>
